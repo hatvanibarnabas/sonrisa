@@ -1,0 +1,39 @@
+{
+  "name": "sonrisa-alerts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "worker": "tsx src/workers/index.ts",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.9.0",
+    "bcryptjs": "^3.0.2",
+    "bullmq": "^5.53.2",
+    "jose": "^6.0.11",
+    "next": "^15.3.3",
+    "nodemailer": "^7.0.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "yahoo-finance2": "^2.13.3",
+    "zod": "^3.25.56"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.15.30",
+    "@types/nodemailer": "^6.4.17",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "prisma": "^6.9.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}
