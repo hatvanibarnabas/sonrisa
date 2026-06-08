@@ -1,0 +1,134 @@
+// Prisma schema for the Alert & Notification System
+// Decision rationale in DECISION_LOG.md — section 3.2
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  isAdmin       Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  alerts        Alert[]
+  notificationLogs NotificationLog[]
+
+  @@index([email])
+}
+
+// ─── Alerts ───────────────────────────────────────────────────────────────────
+// An Alert is a user-defined rule: "notify me when X happens"
+
+model Alert {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String                  // Human-readable label, e.g. "BTC crash"
+  isActive    Boolean     @default(true)
+
+  // What to watch
+  sourceType  AlertSourceType         // NEWS or MARKET
+  keywords    String[]                // For NEWS: e.g. ["earthquake", "tsunami"]
+  ticker      String?                 // For MARKET: e.g. "BTC-USD"
+  threshold   Float?                  // For MARKET: percentage change threshold, e.g. 5.0
+
+  // Which channels to use (can be multiple)
+  channels    AlertChannel[]
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  notificationLogs NotificationLog[]
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+enum AlertSourceType {
+  NEWS
+  MARKET
+}
+
+// ─── Alert Channels ───────────────────────────────────────────────────────────
+// Stores per-alert channel configuration.
+// New channels = new ChannelType enum value + handler class. No schema change needed.
+
+model AlertChannel {
+  id          String      @id @default(cuid())
+  alertId     String
+  alert       Alert       @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  type        ChannelType
+  config      Json        // Channel-specific config: { "to": "user@email.com" } or { "webhookUrl": "..." }
+
+  createdAt   DateTime    @default(now())
+
+  @@index([alertId])
+}
+
+enum ChannelType {
+  EMAIL
+  SLACK
+  // WEBHOOK  ← future: uncomment + add handler
+  // SMS      ← future: uncomment + add handler
+}
+
+// ─── Detected Events ──────────────────────────────────────────────────────────
+// Cached events fetched from external APIs.
+// Prevents re-notifying on the same event across polling cycles.
+
+model DetectedEvent {
+  id          String      @id @default(cuid())
+  sourceType  AlertSourceType
+  externalId  String      // URL for news, "TICKER:timestamp" for market
+
+  title       String
+  summary     String?
+  url         String?
+  detectedAt  DateTime    @default(now())
+
+  notificationLogs NotificationLog[]
+
+  @@unique([sourceType, externalId])   // Deduplication key
+  @@index([detectedAt])
+}
+
+// ─── Notification Logs ────────────────────────────────────────────────────────
+// Immutable audit log: every send attempt, success or failure.
+
+model NotificationLog {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  alertId     String
+  alert       Alert       @relation(fields: [alertId], references: [id])
+  eventId     String
+  event       DetectedEvent @relation(fields: [eventId], references: [id])
+
+  channelType ChannelType
+  status      NotificationStatus
+  error       String?     // Populated on FAILED status
+
+  sentAt      DateTime    @default(now())
+
+  @@index([userId])
+  @@index([alertId])
+  @@index([sentAt])
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+}
