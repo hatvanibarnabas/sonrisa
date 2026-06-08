@@ -1,6 +1,4 @@
-import YahooFinance from "yahoo-finance2";
-
-const yahooFinance = new YahooFinance();
+import yahooFinance from "yahoo-finance2";
 
 export interface MarketMovement {
   externalId: string;
@@ -8,6 +6,12 @@ export interface MarketMovement {
   summary: string | null;
   url: string | null;
   percentChange: number;
+}
+
+function formatMarketTime(time: Date | number | undefined): string {
+  if (!time) return new Date().toISOString();
+  if (time instanceof Date) return time.toISOString();
+  return new Date(time * 1000).toISOString();
 }
 
 export async function checkMarketMovement(
@@ -30,9 +34,7 @@ export async function checkMarketMovement(
   }
 
   const direction = changePercent >= 0 ? "up" : "down";
-  const timestamp = quote.regularMarketTime
-    ? new Date(quote.regularMarketTime).toISOString()
-    : new Date().toISOString();
+  const timestamp = formatMarketTime(quote.regularMarketTime);
 
   return {
     externalId: `${symbol}:${timestamp}`,

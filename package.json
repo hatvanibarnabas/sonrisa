@@ -6,11 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "worker": "tsx src/workers/index.ts",
+    "worker": "node --env-file=.env --import tsx src/workers/index.ts",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:push": "node --env-file=.env ./node_modules/prisma/build/index.js db push",
+    "db:migrate": "node --env-file=.env ./node_modules/prisma/build/index.js migrate dev",
+    "db:seed": "node --env-file=.env --import tsx prisma/seed.ts",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },
@@ -23,7 +23,7 @@
     "nodemailer": "^7.0.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "yahoo-finance2": "^2.13.3",
+    "yahoo-finance2": "^1.14.2",
     "zod": "^3.25.56"
   },
   "devDependencies": {
