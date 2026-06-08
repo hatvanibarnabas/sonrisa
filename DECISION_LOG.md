@@ -165,6 +165,38 @@ This section is updated throughout the project. For each major AI-assisted step,
 - Rejected Claude's initial suggestion to use a separate Express backend — unnecessary complexity given Next.js API routes cover the same ground
 - Kept the BullMQ + Redis suggestion after verifying it's the standard pattern for persistent job queues in Node.js
 
+### M2 — Database & Docker foundation
+- AI scaffolded Next.js 15 + Prisma + Docker Compose
+- **Rejected:** `schema.prisma` at repo root — moved to `prisma/` per convention
+- **Rejected:** `NEXTAUTH_URL` in docker-compose — we use custom JWT auth, not NextAuth; replaced with `JWT_SECRET`
+- **Validated:** Prisma schema relations match the entity diagram in section 2 (User → Alert → AlertChannel, DetectedEvent → NotificationLog)
+
+### M3 — Event detection engine
+- AI generated BullMQ workers for news and market polling
+- **Rejected:** `yahooFinance.chart()` approach — switched to `quote()` for direct `regularMarketChangePercent`; simpler and matches the "threshold" semantics
+- **Rejected:** Re-notifying on every poll cycle — added `notificationLog` existence check before queueing sends
+- **Validated:** NewsAPI `everything` endpoint query params against official docs; `externalId = article.url` is stable enough for dedup within a 20-article page
+- **Known gap kept:** Market alerts use timestamp-based externalId, so the same ticker can trigger again on a new poll if price keeps moving — acceptable for MVP, documented
+
+### M4 — Notification channels
+- Email and Slack implementations follow the `NotificationChannel` interface from section 2.2
+- **Rejected:** Throwing on missing SMTP in dev — Email channel logs a warning instead, so local dev without Mailtrap doesn't crash the worker
+- **Validated:** Slack `validate()` checks webhook URL prefix; tested config validation is called in `createAlertSchema` before DB write
+
+### M5 — UI & admin view
+- Built login/register, alert CRUD, admin dashboard with queue stats
+- **Rejected:** Client-side admin data fetch only — kept server-rendered admin for simplicity, but added `force-dynamic` after build failed without Redis at compile time
+- **Rejected:** Hardcoded logout redirect URL — fixed to use request origin
+- First registered user gets `isAdmin: true` — matches decision in section 2.3
+
+### M6 — Documentation & validation
+- Ran `npm install`, `prisma generate`, `npm run build` to verify the project compiles
+- **Fixed during build:** ioredis version conflict with BullMQ — removed direct `ioredis` dep, pass `ConnectionOptions` instead
+- **Fixed during build:** `yahoo-finance2` v2 requires `new YahooFinance()` instance, not default import call
+- **Fixed during build:** lazy queue initialization to prevent Redis connection attempts during `next build`
+- Created README, PROMPT_HISTORY.md, this updated section
+- Milestone commits created per plan in section 5
+
 ---
 
-*This document will be updated at each milestone commit.*
+*Last updated: M6 complete.*
